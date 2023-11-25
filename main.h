@@ -1,24 +1,59 @@
+//////////////////////////////////////////////////////////////////////////////////////////////
+/*
+
+ __     __                             _    _   _     _   _
+ \ \   / /                            | |  | | | |   (_) | |
+  \ \_/ /   _   _   _ __     ___      | |  | | | |_   _  | |  ___
+   \   /   | | | | | '_ \   / _ \     | |  | | | __| | | | | / __|
+    | |    | |_| | | | | | | (_) |    | |__| | | |_  | | | | \__ \
+    |_|     \__,_| |_| |_|  \___/      \____/   \__| |_| |_| |___/
+
+
+- Main.h
+
+*/
+//////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_dx9.h"
-#include "imgui/imgui_impl_win32.h"
-#include <d3d9.h>
-#include <dinput.h>
-#include <tchar.h>
-#include <chrono>
-#include <thread>
+#include "includes.h"
+//////////////////////////////////////////////////////////////////////////////////////////////
+static const char* AppClass = "Yuno Utils";
+static const char* AppName = "Yuno Utils";
+
+static std::string folderName = "Yuno Utils";
 
 static int switchTabs = 1;
-static const char* AppClass = "APP CLASS";
-static const char* AppName = "APP NAME";
+static int WindowWidth = 950;
+static int WindowHeight = 490;
+
+bool TimerRes = false;
+//////////////////////////////////////////////////////////////////////////////////////////////
 static HWND hwnd = NULL;
 static LPDIRECT3D9              g_pD3D = NULL;
 static LPDIRECT3DDEVICE9        g_pd3dDevice = NULL;
 static D3DPRESENT_PARAMETERS    g_d3dpp = {};
 static ImFont* DefaultFont = nullptr;
-static int WindowWidth = 630;
-static int WindowHeight = 520;
+//////////////////////////////////////////////////////////////////////////////////////////////
+namespace fs = std::experimental::filesystem;
+//////////////////////////////////////////////////////////////////////////////////////////////
+void getConfigFolder() {
 
+    std::string fullPath = "C:\\" + folderName;
+    std::string secondaryPath = "C:\\" + folderName + "\\Apps";
+
+    if (!fs::exists(fullPath) and !fs::exists(secondaryPath)) {
+        std::cout << "folder don't exist, creating..." << std::endl;
+
+        try {
+            fs::create_directory(fullPath);
+            fs::create_directory(secondaryPath);
+        }
+        catch (const std::experimental::filesystem::filesystem_error& e) {
+        }
+    }
+
+    return;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
 HRESULT CreateDeviceD3D(HWND hWnd)
 {
     if ((g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)) == NULL) return E_FAIL;
@@ -35,20 +70,13 @@ HRESULT CreateDeviceD3D(HWND hWnd)
 
     return S_OK;
 }
-void TitleText(const char* text, ImVec4 color) {
-    float textWidth = ImGui::CalcTextSize(text).x;
-    float offsetX = (ImGui::GetContentRegionAvail().x - textWidth) * 0.5f;
-    ImGui::SetCursorPosX(offsetX);
-    ImGui::PushStyleColor(ImGuiCol_Text, color);
-    ImGui::TextUnformatted(text);
-    ImGui::PopStyleColor();
-}
+//////////////////////////////////////////////////////////////////////////////////////////////
 void CleanupDeviceD3D()
 {
     if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = NULL; }
     if (g_pD3D) { g_pD3D->Release(); g_pD3D = NULL; }
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////
 void ResetDevice()
 {
     ImGui_ImplDX9_InvalidateDeviceObjects();
@@ -56,12 +84,22 @@ void ResetDevice()
     if (hr == D3DERR_INVALIDCALL) IM_ASSERT(0);
     ImGui_ImplDX9_CreateDeviceObjects();
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////
+#define WM_TRAYICON (WM_USER + 1)
+NOTIFYICONDATA nid;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
     {
+    case WM_TRAYICON:
+        switch (LOWORD(lParam)) {
+        case WM_LBUTTONUP:
+            ShowWindow(hWnd, SW_RESTORE);
+            SetForegroundWindow(hWnd);
+            break;
+        }
+        break;
     case WM_SIZE:
         if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
         {
@@ -93,8 +131,61 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }
+//////////////////////////////////////////////////////////////////////////////////////////////
+int CountProcessInstances(const std::wstring& process_name) {
+    int count = 0;
 
+    HANDLE handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (handle == INVALID_HANDLE_VALUE) {
+        return count;
+    }
 
+    PROCESSENTRY32 process_entry;
+    process_entry.dwSize = sizeof(PROCESSENTRY32);
+
+    if (!Process32First(handle, &process_entry)) {
+        CloseHandle(handle);
+        return count;
+    }
+
+    do {
+        std::wstring current_process(process_entry.szExeFile);
+        if (current_process == process_name) {
+            count++;
+        }
+    } while (Process32Next(handle, &process_entry));
+
+    CloseHandle(handle);
+    return count;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+bool IsProcessRunning(const wchar_t* processName) {
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+    if (hSnapshot == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    PROCESSENTRY32 pe32;
+    pe32.dwSize = sizeof(PROCESSENTRY32);
+
+    if (!Process32First(hSnapshot, &pe32)) {
+        CloseHandle(hSnapshot);
+        return false;
+    }
+
+    do {
+        if (_wcsicmp(pe32.szExeFile, processName) == 0) {
+            CloseHandle(hSnapshot);
+            return true;
+        }
+
+    } while (Process32Next(hSnapshot, &pe32));
+
+    CloseHandle(hSnapshot);
+    return false;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
 void style() {
     ImVec4* colors = ImGui::GetStyle().Colors;
     colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -104,6 +195,7 @@ void style() {
     colors[ImGuiCol_PopupBg] = ImVec4(0.19f, 0.19f, 0.19f, 0.92f);
     colors[ImGuiCol_Border] = ImVec4(0.19f, 0.19f, 0.19f, 0.95f);
     colors[ImGuiCol_FrameBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
+
     colors[ImGuiCol_FrameBgHovered] = ImVec4(0.19f, 0.19f, 0.19f, 0.54f);
     colors[ImGuiCol_FrameBgActive] = ImVec4(0.20f, 0.22f, 0.23f, 1.00f);
     colors[ImGuiCol_TitleBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
@@ -114,7 +206,7 @@ void style() {
     colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.34f, 0.34f, 0.34f, 0.54f);
     colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.40f, 0.40f, 0.54f);
     colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.56f, 0.56f, 0.56f, 0.54f);
-    colors[ImGuiCol_CheckMark] = ImVec4(0.33f, 0.67f, 0.86f, 1.00f);
+    colors[ImGuiCol_CheckMark] = ImVec4(1.77f, 0.52f, 2.35f, 1.0f);
     colors[ImGuiCol_SliderGrab] = ImVec4(0.34f, 0.34f, 0.34f, 0.54f);
     colors[ImGuiCol_SliderGrabActive] = ImVec4(0.56f, 0.56f, 0.56f, 0.54f);
     colors[ImGuiCol_Button] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
@@ -152,7 +244,7 @@ void style() {
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowPadding = ImVec2(12.00f, 10.00f);
-    style.FramePadding = ImVec2(5.00f, 2.00f);
+    style.FramePadding = ImVec2(5.00f, 1.00f);
     style.CellPadding = ImVec2(6.00f, 6.00f);
     style.ItemSpacing = ImVec2(6.00f, 6.00f);
     style.ItemInnerSpacing = ImVec2(6.00f, 6.00f);
@@ -174,8 +266,7 @@ void style() {
     style.LogSliderDeadzone = 4;
     style.TabRounding = 4;
 }
-
-
+//////////////////////////////////////////////////////////////////////////////////////////////
 void disableNvidiaTelemetry() {
     system("if exist \"%ProgramFiles%\\NVIDIA Corporation\\Installer2\\InstallerCore\\NVI2.DLL\" ("
         "rundll32 \"%PROGRAMFILES%\\NVIDIA Corporation\\Installer2\\InstallerCore\\NVI2.DLL\",UninstallPackage NvTelemetryContainer "
@@ -204,7 +295,7 @@ void disableNvidiaTelemetry() {
 
     return;
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////
 void disableCortana() {
     // Não permitir o Cortana
     system("reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search\" /v \"AllowCortana\" /t REG_DWORD /d 0 /f");
@@ -258,6 +349,7 @@ void disableCortana() {
 
     return;
 }
+//////////////////////////////////////////////////////////////////////////////////////////////
 void disableOffice() {
     // Desativar o log do Microsoft Office
     system("reg add \"HKCU\\SOFTWARE\\Microsoft\\Office\\15.0\\Outlook\\Options\\Mail\" /v \"EnableLogging\" /t REG_DWORD /d 0 /f");
@@ -297,6 +389,7 @@ void disableOffice() {
 
     return;
 }
+//////////////////////////////////////////////////////////////////////////////////////////////
 void ccCleaner() {
     system("reg add \"HKCU\\Software\\Piriform\\CCleaner\" /v \"Monitoring\" /t REG_DWORD /d 0 /f");
     system("reg add \"HKCU\\Software\\Piriform\\CCleaner\" /v \"HelpImproveCCleaner\" /t REG_DWORD /d 0 /f");
@@ -312,6 +405,7 @@ void ccCleaner() {
     system("reg add \"HKLM\\Software\\Piriform\\CCleaner\" /v \"(Cfg)SoftwareUpdaterIpm\" /t REG_DWORD /d 0 /f");
     return;
 }
+//////////////////////////////////////////////////////////////////////////////////////////////
 void disableXboxLive() {
     // Xbox Live Auth Manager
     system("PowerShell -ExecutionPolicy Unrestricted -Command \"$serviceName = 'XblAuthManager'; Write-Host '^''Disabling service: ^''$serviceName^''.'^''; $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue; if(!$service) {; Write-Host '^''Service ^''$serviceName^'' could not be not found, no need to disable it.'^''; Exit 0; }; if ($service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running) {; Write-Host '^''^''$serviceName^'' is running, stopping it.'^''; try {; Stop-Service -Name '^''$serviceName^'' -Force -ErrorAction Stop; Write-Host '^''Stopped ^''$serviceName^'' successfully.'^''; } catch {; Write-Warning '^''Could not stop ^''$serviceName^'', it will be stopped after reboot: $_'^''; }; } else {; Write-Host '^''^''$serviceName^'' is not running, no need to stop.'^''; }; $startupType = $service.StartType; if($startupType -eq 'Disabled') {; Write-Host '^''$serviceName is already disabled, no further action is needed'^''; }; try {; Set-Service -Name '^''$serviceName^'' -StartupType Disabled -Confirm:$false -ErrorAction Stop; Write-Host '^''Disabled ^''$serviceName^'' successfully.'^''; } catch {; Write-Error '^''Could not disable ^''$serviceName^'': $_'^''; }\"");
@@ -323,9 +417,11 @@ void disableXboxLive() {
     system("PowerShell -ExecutionPolicy Unrestricted -Command \"$serviceName = 'XboxNetApiSvc'; Write-Host '^''Disabling service: ^''$serviceName^''.'^''; $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue; if(!$service) {; Write-Host '^''Service ^''$serviceName^'' could not be not found, no need to disable it.'^''; Exit 0; }; if ($service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running) {; Write-Host '^''^''$serviceName^'' is running, stopping it.'^''; try {; Stop-Service -Name '^''$serviceName^'' -Force -ErrorAction Stop; Write-Host '^''Stopped ^''$serviceName^'' successfully.'^''; } catch {; Write-Warning '^''Could not stop ^''$serviceName^'', it will be stopped after reboot: $_'^''; }; } else {; Write-Host '^''^''$serviceName^'' is not running, no need to stop.'^''; }; $startupType = $service.StartType; if($startupType -eq 'Disabled') {; Write-Host '^''$serviceName is already disabled, no further action is needed'^''; }; try {; Set-Service -Name '^''$serviceName^'' -StartupType Disabled -Confirm:$false -ErrorAction Stop; Write-Host '^''Disabled ^''$serviceName^'' successfully.'^''; } catch {; Write-Error '^''Could not disable ^''$serviceName^'': $_'^''; }\"");
     return;
 }
+//////////////////////////////////////////////////////////////////////////////////////////////
 void disableWindowsDefender() {
     system("reg add \"HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\" / v \"DisableAntiSpyware\" / t REG_DWORD / d 1 / f");
 }
+//////////////////////////////////////////////////////////////////////////////////////////////
 void disableUpdates() {
     system("PowerShell -ExecutionPolicy Unrestricted -Command \"$serviceName = 'wuauserv'; Write-Host '^\"Disabling service: ^\"$serviceName^\".'^\"; $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue; if(!$service) {; Write-Host '^\"Service ^\"$serviceName^\" could not be not found, no need to disable it.'^\"; Exit 0; }; if ($service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running) {; Write-Host '^\"^\"$serviceName^\" is running, stopping it.'^\"; try {; Stop-Service -Name '^\"$serviceName^\"' -Force -ErrorAction Stop; Write-Host '^\"Stopped ^\"$serviceName^\" successfully.'^\"; } catch {; Write-Warning '^\"Could not stop ^\"$serviceName^\"^\", it will be stopped after reboot: $_'^\"; }; } else {; Write-Host '^\"^\"$serviceName^\" is not running, no need to stop.'^\"; }; $startupType = $service.StartType; if(!$startupType) {; $startupType = (Get-WmiObject -Query '^\"Select StartMode From Win32_Service Where Name=''$serviceName''^\"' -ErrorAction Ignore).StartMode; if(!$startupType) {; $startupType = (Get-WmiObject -Class Win32_Service -Property StartMode -Filter '^\"Name=''$serviceName''^\"' -ErrorAction Ignore).StartMode; }; }; if($startupType -eq 'Disabled') {; Write-Host '^\"$serviceName is already disabled, no further action is needed'^\"; }; try {; Set-Service -Name '^\"$serviceName^\"' -StartupType Disabled -Confirm:$false -ErrorAction Stop; Write-Host '^\"Disabled ^\"$serviceName^\" successfully.'^\"; } catch {; Write-Error '^\"Could not disable ^\"$serviceName^\": $_'^\"; }\"");
 
@@ -348,3 +444,49 @@ void disableUpdates() {
     system("reg delete \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU\" /v \"ScheduledInstallTime\" /f 2>nul");
 
 }
+//////////////////////////////////////////////////////////////////////////////////////////////
+extern "C" {
+    NTSTATUS NTAPI NtSetTimerResolution(ULONG DesiredResolution, BOOLEAN SetResolution, PULONG CurrentResolution);
+    NTSTATUS NTAPI NtQueryTimerResolution(PULONG MinimumResolution, PULONG MaximumResolution, PULONG CurrentResolution);
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+ULONG minRes, maxRes, currentRes;
+ULONG newResolution = 5000;
+//////////////////////////////////////////////////////////////////////////////////////////////
+int getCurrentRes() {
+
+
+    if (NtQueryTimerResolution(&minRes, &maxRes, &currentRes) == 0) {
+        std::cout << "Current: " << currentRes << "  Min: " << minRes << "  Max: " << maxRes << std::endl;
+    }
+    else {
+        return 1;
+    }
+
+    return 0;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+int setNormalRes() {
+
+
+    if (NtSetTimerResolution(0, FALSE, &currentRes) == 0) {
+        std::cout << "Changed to: " << currentRes << std::endl;
+    }
+    else {
+        return 1;
+    }
+
+    return 0;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+int setMinimiumResolution() {
+    if (NtSetTimerResolution(newResolution, TRUE, &currentRes) == 0) {
+        std::cout << "Changed to:: " << currentRes << std::endl;
+    }
+    else {
+        return 1;
+    }
+
+    return 0;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////

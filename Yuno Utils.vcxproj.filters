@@ -31,6 +31,10 @@
       <Filter>ImGUI</Filter>
     </ClInclude>
     <ClInclude Include="main.h" />
+    <ClInclude Include="includes.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="resource1.h" />
+    <ClInclude Include="resource2.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImGui\imgui.cpp">
@@ -55,5 +59,11 @@
       <Filter>ImGUI</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Yuno Utils.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Arts\logo.ico" />
   </ItemGroup>
 </Project>
