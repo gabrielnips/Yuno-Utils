@@ -1,14 +1,8 @@
-<div align="center">
-  
-# Yuno Utils
-
-</div>
+![Image](https://raw.githubusercontent.com/gabrielnips/Yuno-Utils/main/Arts/banner5.png)
 
 Yuno Utils é um programa de desktop desenvolvido para otimizar a experiência do usuário no Windows, especialmente durante sessões de jogos. Ele oferece várias funcionalidades para manipular configurações do sistema, limpar arquivos temporários e fornecer informações úteis.
 
 ---
-
-![Image](https://media.discordapp.net/attachments/988546085410721882/1178093807506575510/banner_of.jpg)
 
 ## Funcionalidades Principais:
 
