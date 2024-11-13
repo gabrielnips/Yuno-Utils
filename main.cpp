@@ -13,6 +13,7 @@
 */
 //////////////////////////////////////////////////////////////////////////////////////////////
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#pragma warning(disable : 4244)
 #define DIRECTINPUT_VERSION 0x0800
 #include "includes.h"
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,6 +70,29 @@ void Principais() {
         system("DEL /S /Q \"%LOCALAPPDATA%\\Temp\\*.*\"");
     }
 
+
+    ImGui::Separator();
+    ImGui::Text("Game Mode");
+    if (ImGui::Button("Disable", ImVec2(135, 20))) {
+        toggleGameMode(0);
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Enable", ImVec2(135, 20))) {
+        toggleGameMode(1);
+    }
+
+    ImGui::Separator();
+    ImGui::Text("SmartScreen");
+    if (ImGui::Button("Disable", ImVec2(135, 20))) {
+        toggleSmartScreen(0);
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Enable", ImVec2(135, 20))) {
+        toggleSmartScreen(1);
+    }
+
     ImGui::Separator();
     ImGui::Text("Sticky Keys | Teclas De Aderencia");
     if (ImGui::Button("Off", ImVec2(135, 20))) {
@@ -79,8 +103,9 @@ void Principais() {
     if (ImGui::Button("On", ImVec2(135, 20))) {
         SetStickyKeysFlag(L"1");
     }
-
-    ImGui::Separator();
+    ImGui::EndChild();
+    ImGui::SameLine();
+    ImGui::BeginChild(51, ImVec2(300, 449), true);
 
     ImGui::Text("Disable");
     ImGui::Separator();
@@ -116,10 +141,28 @@ void Principais() {
         system("taskkill /f /im GameBar.exe");
         system("taskkill /f /im GameBarFTServer.exe");
     }
-
     ImGui::EndChild();
     ImGui::SameLine();
-    ImGui::BeginChild(51, ImVec2(300, 449), true);
+
+    ImGui::BeginGroup();
+
+    ImGui::BeginChild(54, ImVec2(300, 270), true);
+    ImGui::Text("Credits");
+    ImGui::Separator();
+    ImGui::Text("Dev/Creator: Anderson Niprus");
+    ImGui::Separator();
+    ImGui::TextWrapped("Introducing a desktop program designed to assist and optimize your Windows experience while gaming. This application leverages advanced techniques to enhance system performance and streamline your gaming sessions. With just a click, it helps you achieve a smoother and more efficient Windows environment, ensuring an optimal gaming experience.");
+    if (ImGui::Button("Github", ImVec2(275, 25))) {
+        ShellExecute(NULL, L"open", L"https://github.com/gabrielnips", NULL, NULL, SW_SHOWNORMAL);
+    }
+    if (ImGui::Button("Minimize to a tray", ImVec2(275, 25))) {
+        MinimizeToTray(hwnd);
+    }
+    ImGui::EndChild();
+
+    ImGui::Spacing();
+
+    ImGui::BeginChild(58, ImVec2(300, 166), true);
     ImGui::Text("Timer Resolution");
     ImGui::Separator();
     ImGui::Text("Max Res: %.3fms", static_cast<double>(minRes) / 10000);
@@ -133,25 +176,9 @@ void Principais() {
     else {
         setNormalRes();
     }
+
     ImGui::EndChild();
-    ImGui::SameLine();
-    ImGui::BeginChild(54, ImVec2(300, 449), true);
-    ImGui::Text("Credits");
-    ImGui::Separator();
-    ImGui::Text("Dev/Creator: Gabriel Nips");
-    ImGui::Separator();
-    ImGui::TextWrapped("Introducing a desktop program designed to assist and optimize your Windows experience while gaming. This application leverages advanced techniques to enhance system performance and streamline your gaming sessions. With just a click, it helps you achieve a smoother and more efficient Windows environment, ensuring an optimal gaming experience.");
-    if (ImGui::Button("Github", ImVec2(275, 25))) {
-        ShellExecute(NULL, L"open", L"https://github.com/gabrielnips", NULL, NULL, SW_SHOWNORMAL);
-    }
-    ImGui::Text("ChangeLog:");
-    ImGui::Separator();
-    ImGui::TextWrapped("- Update / 24/11/2023\n  [+] Added Timer Resolution\n  [+] New Menu Design\n  [+] Added Others");
-    ImGui::Separator();
-    if (ImGui::Button("Minimize to a tray", ImVec2(275, 25))) {
-        MinimizeToTray(hwnd);
-    }
-    ImGui::EndChild();
+    ImGui::EndGroup();
 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////

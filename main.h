@@ -14,6 +14,7 @@
 */
 //////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
+#pragma warning(disable : 4129 4101)
 #include "includes.h"
 //////////////////////////////////////////////////////////////////////////////////////////////
 static const char* AppClass = "Yuno Utils";
@@ -33,7 +34,7 @@ static LPDIRECT3DDEVICE9        g_pd3dDevice = NULL;
 static D3DPRESENT_PARAMETERS    g_d3dpp = {};
 static ImFont* DefaultFont = nullptr;
 //////////////////////////////////////////////////////////////////////////////////////////////
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 //////////////////////////////////////////////////////////////////////////////////////////////
 void getConfigFolder() {
 
@@ -47,7 +48,7 @@ void getConfigFolder() {
             fs::create_directory(fullPath);
             fs::create_directory(secondaryPath);
         }
-        catch (const std::experimental::filesystem::filesystem_error& e) {
+        catch (const fs::filesystem_error& e) {
         }
     }
 
@@ -250,7 +251,7 @@ void style() {
     style.ItemInnerSpacing = ImVec2(6.00f, 6.00f);
     style.TouchExtraPadding = ImVec2(0.00f, 0.00f);
     style.IndentSpacing = 25;
-    style.ScrollbarSize = 15;
+    style.ScrollbarSize = 0;
     style.GrabMinSize = 10;
     style.WindowBorderSize = 1;
     style.ChildBorderSize = 1;
@@ -417,6 +418,29 @@ void disableXboxLive() {
     system("PowerShell -ExecutionPolicy Unrestricted -Command \"$serviceName = 'XboxNetApiSvc'; Write-Host '^''Disabling service: ^''$serviceName^''.'^''; $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue; if(!$service) {; Write-Host '^''Service ^''$serviceName^'' could not be not found, no need to disable it.'^''; Exit 0; }; if ($service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running) {; Write-Host '^''^''$serviceName^'' is running, stopping it.'^''; try {; Stop-Service -Name '^''$serviceName^'' -Force -ErrorAction Stop; Write-Host '^''Stopped ^''$serviceName^'' successfully.'^''; } catch {; Write-Warning '^''Could not stop ^''$serviceName^'', it will be stopped after reboot: $_'^''; }; } else {; Write-Host '^''^''$serviceName^'' is not running, no need to stop.'^''; }; $startupType = $service.StartType; if($startupType -eq 'Disabled') {; Write-Host '^''$serviceName is already disabled, no further action is needed'^''; }; try {; Set-Service -Name '^''$serviceName^'' -StartupType Disabled -Confirm:$false -ErrorAction Stop; Write-Host '^''Disabled ^''$serviceName^'' successfully.'^''; } catch {; Write-Error '^''Could not disable ^''$serviceName^'': $_'^''; }\"");
     return;
 }
+//////////////////////////////////////////////////////////////////////////////////////////////
+void toggleGameMode(int change) {
+    std::string commandOne = "reg add \"HKCU\\SOFTWARE\\Microsoft\\GameBar\" /v \"AllowAutoGameMode\" /t REG_DWORD /d " + std::to_string(change) + " /f";
+    std::string commandTwo = "reg add \"HKCU\\SOFTWARE\\Microsoft\\GameBar\" /v \"AutoGameModeEnabled\" /t REG_DWORD /d " + std::to_string(change) + " /f";
+    system(commandOne.c_str());
+    system(commandTwo.c_str());
+   return;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+void toggleSmartScreen(int change) {
+    std::string smartScreenStatus = (change == 0) ? "Off" : "On";
+
+    std::string commandOne = "reg add \"HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System\" /v \"EnablingSmartScreen\" /t REG_DWORD /d " + std::to_string(change) + " /f";
+    std::string commandTwo = "reg add \"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\" /v \"SmartScreenEnabled\" /t REG_SZ /d \"" + smartScreenStatus + "\" /f";
+    std::string commandThree = "reg add \"HKU\\!USER_SID!\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppHost\" /v \"EnablingWebContentEvaluation\" /t REG_DWORD /d " + std::to_string(change) + " /f";
+
+    system(commandOne.c_str());
+    system(commandTwo.c_str());
+    system(commandThree.c_str());
+
+    return;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////
 void disableWindowsDefender() {
     system("reg add \"HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\" / v \"DisableAntiSpyware\" / t REG_DWORD / d 1 / f");
